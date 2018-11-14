@@ -26,52 +26,64 @@ end
 
 function ENT:Use( ply, caller ) -- called when a player presses E on the entity
 
-	LastJobModel = caller:GetModel()
+	ply.LastJobModel = caller:GetModel()
 	-- Sombody toucha mah spahget
 	if IsValid(caller) and caller:IsPlayer() then
 
-		local check = false -- check to see if we are out of both health and armor
-
-		if caller:Armor() >= ArmorSyst.ArmorCap && caller:Health() >= ArmorSyst.PlayerHealth then
+		local shouldCheck = {(caller:Armor() >= ArmorSyst.ArmorCap) , caller:Health() > (ArmorSyst.HealthCap - ArmorSyst.PlayerHealth)} // *dab* checked
+		
+		if shouldCheck[1] and shouldCheck[2] then
 			caller:ChatPrint( "Your health & armor are at full capacity!" )
-			check = true
+			return ""
 		end
-
-		if caller:Armor() < ArmorSyst.ArmorCap then
+		
+		if !shouldCheck[1] then
+		
 			caller:SetArmor( caller:Armor() + ArmorSyst.ArmorNumber )
 			caller:SetModel(ArmorSyst.PlyModel)
 			self:Remove()
-		elseif caller:Armor() >= ArmorSyst.ArmorCap then
-			if check == false then
+			
+		else
+		
 			caller:ChatPrint( "Your armor is at full capacity!" )
-		elseif check == true then return end
+		
 		end
 	    
-	    if caller:Health() < ArmorSyst.HealthCap then
+	    if !shouldCheck[2] then
+		
 			caller:SetHealth( caller:Health() + ArmorSyst.PlayerHealth )
 			self:Remove()
-		elseif caller:Health() >= ArmorSyst.HealthCap then
-			if check == false then
-			caller:ChatPrint( "Your armor is at full capacity!" )
-		elseif check == true then return end
-
+			
+		else
+		
+			caller:ChatPrint( "Your health is at full capacity!" )
+		
 		end
+		
     end
 end
 
 hook.Add( "PlayerSay", "RemoveSuit", function( ply, text, public )
 
-	if ( string.lower( text ) == "/dropsuit" ) && ArmorSyst.ArmorNumber == ArmorSyst.ArmorCap && ply:Health() == 150 then
-		ply:SetArmor(ply:Armor() - ArmorSyst.ArmorNumber)
-		ply:SetHealth(ply:Health() - ArmorSyst.PlayerHealth)
-		ply:SetModel(LastJobModel)
-		ply:ChatPrint( "You have removed your armor." )
+	if ( string.lower( text ) == "/dropsuit" ) then
 
-		local enta = ents.Create( "gay_armour" )
-		enta:SetPos(ply:GetPos() + Vector(0, 0, ArmorSyst.EntPos))
-		enta:Spawn()
-		enta:EmitSound( "buttons/weapon_confirm.wav" )
+		if (ply:Armor() >= ArmorSyst.ArmorNumber && ply:Health() > ArmorSyst.PlayerHealth) then
+		
+			ply:SetArmor(ply:Armor() - ArmorSyst.ArmorNumber)
+			ply:SetHealth(ply:Health() - ArmorSyst.PlayerHealth)
+			ply:SetModel(ply.LastJobModel or ply:GetModel())
+			ply:ChatPrint( "You have removed your armor." )
 
+			local enta = ents.Create( "gay_armour" )
+			enta:SetPos(ply:GetPos() + Vector(0, 0, ArmorSyst.EntPos))
+			enta:Spawn()
+			enta:EmitSound( "buttons/weapon_confirm.wav" )
+			
+			return ""
+		end
+		
+		ply:ChatPrint( "You have no armor to have off." )
+		
 		return ""
 	end
 end )
